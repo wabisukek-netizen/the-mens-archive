@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{HOME_TITLE}}</title>
+  <meta name="description" content="{{HOME_DESCRIPTION}}">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="{{HOME_CANONICAL}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="THE MEN’S ARCHIVE">
+  <meta property="og:title" content="{{HOME_TITLE}}">
+  <meta property="og:description" content="{{HOME_DESCRIPTION}}">
+  <meta property="og:url" content="{{HOME_CANONICAL}}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{HOME_TITLE}}">
+  <meta name="twitter:description" content="{{HOME_DESCRIPTION}}">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" type="application/rss+xml" title="THE MEN’S ARCHIVE RSS" href="/rss.xml">
+  <link rel="alternate" type="application/feed+json" title="THE MEN’S ARCHIVE JSON Feed" href="/feed.json">
+  <link rel="stylesheet" href="/style.css">
+  {{HOME_JSONLD}}
+</head>
+<body>
+<a class="skip" href="#main">本文へ</a>
+<header class="mast">
+  <div class="wrap mast-top">
+    <a class="logo" href="/">THE MEN’S ARCHIVE<span>服は、時代を語る。</span></a>
+    <div class="top-search"><input id="search" type="search" placeholder="キーワードで検索" aria-label="記事を検索"><span>⌕</span></div>
+    <div class="top-links"><a href="#about">ABOUT</a><a href="/archive/">ARCHIVE</a></div>
+  </div>
+  <nav class="category-bar" aria-label="カテゴリー"><div class="wrap category-inner">{{CATEGORY_NAV}}</div></nav>
+</header>
+<main id="main">
+  <section class="hero"><div class="wrap hero-grid"><div>
+    <p class="eyebrow">FASHION / HISTORY / MUSIC / CULTURE</p>
+    <h1>{{HERO_TITLE}}</h1>
+    <p class="lead">{{HERO_TEXT}}</p>
+    <a class="text-link" href="#archive">EXPLORE THE ARCHIVE ↘</a>
+  </div><div class="hero-panel" aria-hidden="true"><div class="hero-mark">M</div><div><strong>THE MEN’S ARCHIVE</strong><span>ROYAL CLASSIC → STREET CULTURE</span></div></div></div></section>
+  <section class="section wrap"><div class="section-title"><div><p class="eyebrow">EXPLORE</p><h2>文化から探す。</h2></div><p>王室のドレスコードから、仕立て、音楽、ヴィンテージ、モード、ストリートまで。</p></div><div class="topic-grid">{{TOPIC_CARDS}}</div></section>
+  <section id="archive" class="archive section"><div class="wrap">
+    <div class="section-title archive-title"><div><p class="eyebrow">ARCHIVE</p><h2>新着記事。</h2></div><span id="resultCount" class="count">{{ARTICLE_COUNT}} ARTICLES</span></div>
+    <div class="filters"><label>TOPIC<select id="topicFilter">{{TOPIC_OPTIONS}}</select></label><label>ERA<select id="eraFilter">{{ERA_OPTIONS}}</select></label></div>
+    <div class="story-grid">{{ARTICLE_CARDS}}<p id="filterEmpty" class="empty" hidden>条件に合う記事はありません。</p></div>
+    <p class="archive-more"><a class="text-link" href="/archive/">ALL STORIES ↗</a></p>
+  </div></section>
+  <section id="about" class="vision"><div class="wrap vision-grid"><div><p class="eyebrow">THE EDITORIAL VISION</p><h2>服を読む。<br>時代を知る。<br>スタイルを受け継ぐ。</h2></div><div><p>英国王室のクラシック、イタリアの仕立て、アメリカのアイビー・ワーク・サーフ、日本のモードとストリート。服は、それぞれの時代と場所の価値観を映します。</p><p>THE MEN’S ARCHIVEは、世界のメンズファッションを歴史・音楽・文化・技術と結びながら読み解く独立した編集アーカイブです。</p></div></div></section>
+</main>
+<footer><div class="wrap footer-grid"><div><strong>THE MEN’S ARCHIVE</strong><p>FASHION / HISTORY / MUSIC / CULTURE</p></div><div><span>© <span id="year"></span> THE MEN’S ARCHIVE</span></div></div></footer>
+<script src="/public.js" defer></script>
+</body></html>

@@ -1,0 +1,11 @@
+{
+  "name": "the-mens-archive",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:fixture": "node scripts/build.mjs --fixture scripts/fixture-public.json",
+    "check": "node --check source/store.js && node --check source/admin.js && node --check source/public.js && node --check scripts/build.mjs"
+  },
+  "engines": {"node": ">=20"}
+}

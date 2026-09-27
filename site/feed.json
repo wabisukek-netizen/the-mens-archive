@@ -1,0 +1,29 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "THE MEN’S ARCHIVE",
+  "home_page_url": "https://the-mens-archive.pages.dev/",
+  "feed_url": "https://the-mens-archive.pages.dev/feed.json",
+  "language": "ja",
+  "items": [
+    {
+      "id": "https://the-mens-archive.pages.dev/articles/reading-fashion-understanding-history/",
+      "url": "https://the-mens-archive.pages.dev/articles/reading-fashion-understanding-history/",
+      "title": "新しい服を読む。時代を知る。 ──メンズファッションは、なぜ歴史を語るのか記事",
+      "summary": "服は単なる衣服ではない。\n英国王室、アイビー、モッズ、パンク、デニム、日本のモードまで、メンズファッションを通して歴史・文化・音楽・社会の変化を読み解く。",
+      "date_published": "2026-09-27T05:39:00.000Z",
+      "date_modified": "2026-09-27T05:39:16.126Z",
+      "tags": [
+        "fashion history",
+        "menswear",
+        "culture",
+        "music",
+        "British style",
+        "Ivy",
+        "Mods",
+        "Punk",
+        "denim",
+        "Japanese fashion"
+      ]
+    }
+  ]
+}

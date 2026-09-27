@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>管理画面 | THE MEN’S ARCHIVE</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="admin-body">
+<header class="admin-head">
+  <div class="wrap admin-head-inner">
+    <div><a href="./" class="admin-logo">THE MEN’S ARCHIVE</a><span>EDITOR</span></div>
+    <a href="./" class="admin-public-link">公開サイトを見る ↗</a>
+  </div>
+</header>
+
+<main class="wrap admin-main">
+  <div id="msg" class="admin-msg"></div>
+
+  <section id="login" class="login-card">
+    <p class="eyebrow">ADMINISTRATOR</p>
+    <h1>管理者ログイン</h1>
+    <form id="loginForm">
+      <label>メールアドレス<input id="email" type="email" autocomplete="username" required></label>
+      <label>パスワード<input id="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">ログイン</button>
+    </form>
+  </section>
+
+  <section id="workspace" hidden>
+    <div class="dashboard">
+      <div><span>REVISION</span><strong id="revision">0</strong></div>
+      <div><span>ALL ARTICLES</span><strong id="articleCount">0</strong></div>
+      <div><span>PUBLISHED</span><strong id="publicCount">0</strong></div>
+      <div class="dashboard-actions">
+        <button id="reloadBtn">オンラインの最新内容を読み直す</button>
+        <button id="saveBtn" class="primary" disabled>保存</button>
+        <button id="logoutBtn">ログアウト</button>
+      </div>
+    </div>
+
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <button id="newBtn" class="primary admin-new">＋ 新しい記事</button>
+        <input id="adminSearch" class="admin-search" type="search" placeholder="記事を検索">
+        <div id="list" class="admin-list"></div>
+        <div class="backup-box">
+          <button id="exportBtn">バックアップを書き出す</button>
+          <label class="file-btn">バックアップを読み込む<input id="importFile" type="file" accept="application/json"></label>
+        </div>
+      </aside>
+
+      <form id="editor" class="editor-form">
+        <input id="articleId" type="hidden">
+
+        <div class="field full"><label>タイトル<input id="title" type="text"></label></div>
+        <div class="field full"><label>サブタイトル<input id="subtitle" type="text"></label></div>
+
+        <div class="field"><label>slug<input id="slug" type="text" placeholder="例: history-of-ivy"></label></div>
+        <div class="field"><label>TOPIC<input id="topic" type="text" placeholder="HISTORY"></label></div>
+        <div class="field"><label>ERA<input id="era" type="text" placeholder="1960s"></label></div>
+        <div class="field"><label>REGION<input id="region" type="text" placeholder="UK / USA / JAPAN"></label></div>
+
+        <div class="field full"><label>タグ（カンマ区切り）<input id="tags" type="text" placeholder="mods, london, tailoring"></label></div>
+        <div class="field full"><label>説明・meta description<textarea id="description" rows="3"></textarea></label></div>
+        <div class="field full"><label>本文<textarea id="body" rows="18"></textarea></label></div>
+
+        <div class="field full"><label>画像パス<input id="image" type="text" placeholder="画像アップロード後に自動入力"></label></div>
+        <div class="field"><label>画像alt<input id="imageAlt" type="text"></label></div>
+        <div class="field"><label>写真アップロード<input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+
+        <div class="field full"><label>参考文献・出典<textarea id="references" rows="5"></textarea></label></div>
+        <div class="field"><label>公開日時<input id="publishedAt" type="datetime-local"></label></div>
+        <div class="field publish-field"><label><input id="published" type="checkbox"> 公開する</label></div>
+
+        <div class="field full danger-row"><button id="deleteBtn" type="button" class="danger" disabled>この記事を削除</button></div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<script src="./config.js"></script>
+<script type="module" src="./admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# THE MEN’S ARCHIVE
+
+Independent Japanese editorial archive about men's fashion, history, music, culture, design, craft and vintage.
+
+## Primary resources
+- Home: https://the-mens-archive.pages.dev/
+- Archive: https://the-mens-archive.pages.dev/archive/
+- Sitemap: https://the-mens-archive.pages.dev/sitemap.xml
+- RSS: https://the-mens-archive.pages.dev/rss.xml
+- JSON Feed: https://the-mens-archive.pages.dev/feed.json
+
+## Published articles
+- [新しい服を読む。時代を知る。 ──メンズファッションは、なぜ歴史を語るのか記事](https://the-mens-archive.pages.dev/articles/reading-fashion-understanding-history/): 服は単なる衣服ではない。
+英国王室、アイビー、モッズ、パンク、デニム、日本のモードまで、メンズファッションを通して歴史・文化・音楽・社会の変化を読み解く。

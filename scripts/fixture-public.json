@@ -1,0 +1,13 @@
+{
+  "revision": 7,
+  "data": {
+    "version": 2,
+    "hero": {"title":"服を読む。時代を知る。","text":"世界のメンズファッションを歴史と文化から読み解く。"},
+    "topics": ["HISTORY","MUSIC & CULTURE","VINTAGE"],
+    "eras": ["1960s","1970s"],
+    "articles": [
+      {"id":"1","title":"モッズとロンドンの街角","subtitle":"音楽と仕立てが交差した1960年代","slug":"mods-london-1960s","topic":"MUSIC & CULTURE","era":"1960s","description":"1960年代ロンドンのモッズ文化と装いの関係を読み解く。","body":"モッズは、音楽と服装が密接に結びついた都市文化だった。\n\n## スーツとスクーター\n細身のスーツとスクーターは、若者文化の象徴になった。","image":"","imageAlt":"1960年代ロンドンのモッズ文化をイメージした装い","tags":["mods","london","1960s"],"published":true,"status":"published","publishedAt":"2026-09-20T08:00:00+09:00","updatedAt":"2026-09-25T09:30:00+09:00","references":"V&Aなどの一次・二次資料を確認予定。"},
+      {"id":"2","title":"下書き記事","slug":"draft-only","published":false,"status":"draft","body":"公開しない"}
+    ]
+  }
+}
