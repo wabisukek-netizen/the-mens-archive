@@ -149,6 +149,26 @@ async function save() {
     renderMeta();
     renderList();
     message('保存しました。');
+    try {
+const session = store.session;
+if (session?.access_token) {
+await fetch('https://vgyefpswvnkzhciudium.supabase.co/functions/v1/trigger-deploy', {
+method: 'POST',
+headers: {
+Authorization: `Bearer ${session.access_token}`,
+apikey: window.ARCHIVE_CONFIG?.anonKey || '',
+'Content-Type': 'application/json',
+},
+body: JSON.stringify({ source: 'admin-save' }),
+});
+}
+} catch (deployError) {
+console.warn('Deploy trigger failed:', deployError);
+}
+
+
+
+
   } catch(e) {
     message(e.message, true);
   }
