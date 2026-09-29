@@ -123,21 +123,56 @@ function renderMeta() {
   $('#publicCount').textContent = String(state.data.articles.filter(published).length);
 }
 
-function addArticle() {
-  sync();
-  const now = new Date().toISOString();
-  const a = {
-    id: uid(), title:'新しい記事', subtitle:'', slug:'', topic:'', era:'', region:'',
-    tags:[], description:'', body:'', content:'', image:'', imageAlt:'', references:'',
-    published:false, status:'draft', publishedAt:null, createdAt:now, updatedAt:now
-  };
-  state.data.articles.push(a);
-  state.selectedId = a.id;
-  fill(a.id);
-  renderList();
-  renderMeta();
-  setDirty(true);
+async function addArticle() {
+sync();
+const now = new Date().toISOString();
+
+const a = {
+id: uid(),
+title: '新しい記事',
+subtitle: '',
+slug: '',
+topic: '',
+era: '',
+region: '',
+tags: [],
+description: '',
+body: '',
+content: '',
+image: '',
+imageAlt: '',
+references: '',
+published: false,
+status: 'draft',
+publishedAt: null,
+createdAt: now,
+updatedAt: now
+};
+
+state.data.articles.push(a);
+state.selectedId = a.id;
+fill(a.id);
+renderList();
+renderMeta();
+setDirty(true);
+
+try {
+const res = await store.save(state.data, state.revision);
+state.revision = Number(
+res?.revision ?? res?.new_revision ?? state.revision + 1
+);
+setDirty(false);
+renderMeta();
+renderList();
+message('新しい下書きを保存しました。');
+} catch (e) {
+message(e.message, true);
 }
+}
+
+
+
+
 
 async function save() {
   sync();
