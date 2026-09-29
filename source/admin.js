@@ -67,7 +67,8 @@ function sync() {
   a.references = $('#references').value.trim();
   a.published = $('#published').checked;
   a.status = a.published ? 'published' : 'draft';
-  a.publishedAt = iso($('#publishedAt').value) || (a.published ? a.publishedAt || now : null);
+  a.publishedAt = iso($('#publishedAt').value || (a.published ? a.publishedAt || now : '')) || '';
+
   a.updatedAt = now;
   if (!a.createdAt) a.createdAt = now;
   if (!wasPublished && a.published && !a.publishedAt) a.publishedAt = now;
