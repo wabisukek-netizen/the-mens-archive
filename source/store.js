@@ -1,5 +1,6 @@
 // THE MEN'S ARCHIVE — production Supabase adapter
 // Public reads use `apikey` only. Authorization is attached only for an authenticated admin session.
+import { normalizeDocument } from './document.js';
 export class CloudStore {
   constructor(config = {}) {
     this.config = { ...config };
@@ -59,7 +60,7 @@ export class CloudStore {
     const response = await fetch(this.config.url + path, {
       method,
       cache: 'no-store',
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(body && !(body instanceof Blob) ? 120000 : 30000),
       headers: {
         apikey: this.config.anonKey,
         ...authHeaders,
@@ -163,10 +164,11 @@ export class CloudStore {
   }
 
   save(data, revision) {
+    if (!this.session?.access_token) throw Error('保存するには管理者ログインが必要です。');
     return this.request('/rest/v1/rpc/archive_save', {
       method: 'POST',
       auth: true,
-      body: { payload: data, expected_revision: revision }
+      body: { payload: normalizeDocument(data), expected_revision: revision }
     });
   }
 

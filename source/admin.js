@@ -1,8 +1,9 @@
 import { CloudStore } from './store.js';
+import { normalizeDocument, validatePublished } from './document.js';
 
 const $ = s => document.querySelector(s);
 const store = new CloudStore(window.ARCHIVE_CONFIG || {});
-const state = { revision: 0, data: null, selectedId: null, dirty: false };
+const state = { revision: 0, data: null, selectedId: null, dirty: false, saving: false, editVersion: 0, publishedSlugs: new Map() };
 
 function blankData() {
   return {
@@ -19,7 +20,7 @@ function blankData() {
   };
 }
 function normalize(res) {
-  const d = res?.data || res || {};
+  const d = normalizeDocument(res?.data || res || {});
   const b = blankData();
   return {
     ...b, ...d,
@@ -40,7 +41,8 @@ function message(t='', err=false){const el=$('#msg');el.textContent=t;el.classLi
 
 function setDirty(v=true) {
   state.dirty = v;
-  $('#saveBtn').disabled = !v;
+  if (v) state.editVersion++;
+  $('#saveBtn').disabled = !v || state.saving;
 }
 
 function sync() {
@@ -61,14 +63,15 @@ function sync() {
   a.tags = $('#tags').value.split(',').map(x=>x.trim()).filter(Boolean);
   a.description = $('#description').value.trim();
   a.body = $('#body').value;
-  a.content = $('#body').value;
+  // Keep the legacy alias only on records that already use it. New articles
+  // store one body, avoiding a second copy of every long article in the RPC.
+  if (Object.hasOwn(a, 'content')) a.content = a.body;
   a.image = $('#image').value.trim();
   a.imageAlt = $('#imageAlt').value.trim();
   a.references = $('#references').value.trim();
   a.published = $('#published').checked;
   a.status = a.published ? 'published' : 'draft';
-  a.publishedAt = iso($('#publishedAt').value || (a.published ? a.publishedAt || now : '')) || '';
-
+  a.publishedAt = iso($('#publishedAt').value) || (a.published ? a.publishedAt || now : a.publishedAt || null);
   a.updatedAt = now;
   if (!a.createdAt) a.createdAt = now;
   if (!wasPublished && a.published && !a.publishedAt) a.publishedAt = now;
@@ -79,7 +82,7 @@ function fill(id) {
   if (!a) return;
   state.selectedId = a.id;
   $('#articleId').value = a.id || '';
-  $('#title').value = title(a);
+  $('#title').value = a.title ?? a.name ?? '';
   $('#subtitle').value = a.subtitle || '';
   $('#slug').value = a.slug || '';
   $('#topic').value = a.topic || '';
@@ -87,7 +90,7 @@ function fill(id) {
   $('#region').value = a.region || '';
   $('#tags').value = Array.isArray(a.tags) ? a.tags.join(', ') : '';
   $('#description').value = a.description || '';
-  $('#body').value = a.body || a.content || '';
+  $('#body').value = a.body ?? a.content ?? '';
   $('#image').value = a.image || a.imagePath || '';
   $('#imageAlt').value = a.imageAlt || '';
   $('#references').value = a.references || '';
@@ -124,90 +127,50 @@ function renderMeta() {
   $('#publicCount').textContent = String(state.data.articles.filter(published).length);
 }
 
-async function addArticle() {
-sync();
-const now = new Date().toISOString();
-
-const a = {
-id: uid(),
-title: '新しい記事',
-subtitle: '',
-slug: '',
-topic: '',
-era: '',
-region: '',
-tags: [],
-description: '',
-body: '',
-content: '',
-image: '',
-imageAlt: '',
-references: '',
-published: false,
-status: 'draft',
-publishedAt: null,
-createdAt: now,
-updatedAt: now
-};
-
-state.data.articles.push(a);
-state.selectedId = a.id;
-fill(a.id);
-renderList();
-renderMeta();
-setDirty(true);
-
-try {
-const res = await store.save(state.data, state.revision);
-state.revision = Number(
-res?.revision ?? res?.new_revision ?? state.revision + 1
-);
-setDirty(false);
-renderMeta();
-renderList();
-message('新しい下書きを保存しました。');
-} catch (e) {
-message(e.message, true);
+function addArticle() {
+  sync();
+  const now = new Date().toISOString();
+  const a = {
+    id: uid(), title:'', subtitle:'', slug:'', topic:'', era:'', region:'',
+    tags:[], description:'', body:'', image:'', imageAlt:'', references:'',
+    published:false, status:'draft', publishedAt:null, createdAt:now, updatedAt:now
+  };
+  state.data.articles.push(a);
+  state.selectedId = a.id;
+  fill(a.id);
+  renderList();
+  renderMeta();
+  setDirty(true);
 }
-}
-
-
-
-
 
 async function save() {
+  if (state.saving) return;
   sync();
+  const snapshot = normalizeDocument(state.data);
+  try { validatePublished(snapshot, state.publishedSlugs); }
+  catch (e) { message(e.message, true); return; }
   message('保存中…');
+  state.saving = true;
+  $('#saveBtn').disabled = true;
+  const editVersion = state.editVersion;
   try {
-    const res = await store.save(state.data, state.revision);
+    const res = await store.save(snapshot, state.revision);
     state.revision = Number(res?.revision ?? res?.new_revision ?? state.revision + 1);
-    setDirty(false);
+    state.publishedSlugs = publishedSlugMap(snapshot);
+    if (state.editVersion === editVersion) state.dirty = false;
     renderMeta();
     renderList();
-    message('保存しました。');
-    try {
-const session = store.session;
-if (session?.access_token) {
-await fetch('https://vgyefpswvnkzhciudium.supabase.co/functions/v1/trigger-deploy', {
-method: 'POST',
-headers: {
-Authorization: `Bearer ${session.access_token}`,
-apikey: window.ARCHIVE_CONFIG?.anonKey || '',
-'Content-Type': 'application/json',
-},
-body: JSON.stringify({ source: 'admin-save' }),
-});
-}
-} catch (deployError) {
-console.warn('Deploy trigger failed:', deployError);
-}
-
-
-
-
+    message(state.dirty ? '保存中に新しい編集がありました。もう一度保存してください。' : 'オンラインに保存しました。');
   } catch(e) {
     message(e.message, true);
+  } finally {
+    state.saving = false;
+    $('#saveBtn').disabled = !state.dirty;
   }
+}
+
+function publishedSlugMap(data) {
+  return new Map(data.articles.filter(published).map(a => [String(a.id), a.slug]));
 }
 
 async function reload() {
@@ -217,6 +180,7 @@ async function reload() {
     const res = await store.read(true);
     state.revision = Number(res?.revision || 0);
     state.data = normalize(res);
+    state.publishedSlugs = publishedSlugMap(state.data);
     setDirty(false);
     if (state.selectedId && state.data.articles.some(a=>String(a.id)===String(state.selectedId))) fill(state.selectedId);
     else { state.selectedId = state.data.articles[0]?.id || null; state.selectedId ? fill(state.selectedId) : clearEditor(); }
@@ -277,6 +241,7 @@ async function login(e) {
     const res = await store.login($('#email').value.trim(), $('#password').value);
     state.revision = Number(res?.revision || 0);
     state.data = normalize(res);
+    state.publishedSlugs = publishedSlugMap(state.data);
     $('#login').hidden = true;
     $('#workspace').hidden = false;
     state.selectedId = state.data.articles[0]?.id || null;
@@ -315,6 +280,7 @@ async function boot() {
       const res = await store.read(true);
       state.revision = Number(res?.revision || 0);
       state.data = normalize(res);
+      state.publishedSlugs = publishedSlugMap(state.data);
       $('#login').hidden = true;
       $('#workspace').hidden = false;
       state.selectedId = state.data.articles[0]?.id || null;
