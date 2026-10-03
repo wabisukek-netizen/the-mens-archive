@@ -105,7 +105,8 @@ async function main() {
   published.sort((a,b)=>String(b.publishedAt||b.updatedAt||'').localeCompare(String(a.publishedAt||a.updatedAt||'')));
 
   await fs.rm(out,{recursive:true,force:true}); await fs.mkdir(out,{recursive:true});
-  for (const name of ['style.css','public.js','admin.html','admin.js','config.js','store.js','favicon.svg']) await fs.copyFile(path.join(source,name),path.join(out,name));
+  for (const name of ['style.css','public.js','admin.html','admin.js','config.js','store.js','document.js','favicon.svg']
+) await fs.copyFile(path.join(source,name),path.join(out,name));
 
   const topics = Array.isArray(data.topics)&&data.topics.length ? data.topics : [...new Set(published.map(a=>a.topic).filter(Boolean))];
   const eras = Array.isArray(data.eras)&&data.eras.length ? data.eras : [...new Set(published.map(a=>a.era).filter(Boolean))];
