@@ -175,7 +175,10 @@ export class CloudStore {
   async upload(dataURL) {
     if (!this.session?.access_token) throw Error('写真のアップロードには管理者ログインが必要です。');
 
-    const blob = await (await fetch(dataURL)).blob();
+    const [meta, base64] = dataURL.split(',');
+const mime = meta.match(/^data:(.*?);base64$/)?.[1] || 'application/octet-stream';
+const blob = new Blob([Uint8Array.from(atob(base64), c => c.charCodeAt(0))], { type: mime });
+
     if (!['image/jpeg','image/png','image/webp'].includes(blob.type) || blob.size > 5 * 1024 * 1024) {
       throw Error('写真はJPEG・PNG・WebPの5MB以下にしてください。');
     }
