@@ -161,6 +161,23 @@ async function save() {
     renderMeta();
     renderList();
     message(state.dirty ? '保存中に新しい編集がありました。もう一度保存してください。' : 'オンラインに保存しました。');
+    if (!state.dirty) {
+try {
+await store.request('/functions/v1/trigger-deploy', {
+method: 'POST',
+auth: true,
+body: {}
+});
+message('保存しました。公開サイトの更新を開始しました。');
+} catch (deployError) {
+message('記事は保存済みです。自動公開の開始に失敗しました: ' + deployError.message, true);
+}
+}
+
+
+
+
+
   } catch(e) {
     message(e.message, true);
   } finally {
