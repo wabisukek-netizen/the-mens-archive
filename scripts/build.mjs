@@ -11,7 +11,8 @@ const args = process.argv.slice(2);
 const fixtureIndex = args.indexOf('--fixture');
 const fixture = fixtureIndex >= 0 ? args[fixtureIndex + 1] : null;
 
-const SITE_URL = (process.env.SITE_URL || 'https://the-mens-archive.pages.dev').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://themensarchive.com
+').replace(/\/$/, '');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vgyefpswvnkzhciudium.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_u8lrye0It1b3CuutwEPN8w_uigAGHnD';
 const PAGE_SIZE = 24;
