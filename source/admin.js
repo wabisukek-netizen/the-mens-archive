@@ -143,6 +143,64 @@ function addArticle() {
   setDirty(true);
 }
 
+// ---- 公開合図（trigger-deploy）の扱い ----
+// 応答の中身を見る: status が明示され、それが 'started' でなければ開始していない。
+// status 欄の無い応答（旧関数）は従来どおり開始とみなす（後方互換）。
+function deployCooldownSeconds(err) {
+  const d = err?.detail || {};
+  if (d?.status === 'cooldown') {
+    const n = Number(d.retryAfterSeconds);
+    return Number.isFinite(n) && n > 0 ? Math.min(Math.ceil(n), 60) : 30;
+  }
+  if (err?.status === 429) return 30;
+  return 0;
+}
+
+async function callDeploy() {
+  const res = await store.request('/functions/v1/trigger-deploy', { method: 'POST', auth: true, body: {} });
+  if (res && typeof res === 'object' && 'status' in res && res.status !== 'started') {
+    const err = new Error('公開は開始されませんでした（' + res.status + '）');
+    err.detail = res;
+    throw err;
+  }
+  return res;
+}
+
+async function deployWithRetry(successMessage) {
+  try {
+    await callDeploy();
+    message(successMessage);
+    return true;
+  } catch (e) {
+    const wait = deployCooldownSeconds(e);
+    if (!wait) throw e;
+    message(`公開の合図が短時間に重なったため、${wait}秒後に自動で再試行します。`);
+    setTimeout(async () => {
+      if (state.dirty || state.saving) return;
+      try { await callDeploy(); message('公開サイトの更新を開始しました。'); }
+      catch { message('公開はまだ始まっていません。「公開サイトを更新」ボタンで再試行できます。', true); }
+    }, wait * 1000);
+    return false;
+  }
+}
+
+async function deployAfterSave() {
+  try {
+    await deployWithRetry('保存しました。公開サイトの更新を開始しました。');
+  } catch (e) {
+    message('記事は保存済みです。自動公開の開始に失敗しました: ' + e.message + ' 「公開サイトを更新」ボタンで再試行できます。', true);
+  }
+}
+
+async function manualDeploy() {
+  message('公開サイトの更新を依頼しています…');
+  try {
+    await deployWithRetry('公開サイトの更新を開始しました。数分後に反映されます。');
+  } catch (e) {
+    message('公開の開始に失敗しました: ' + e.message, true);
+  }
+}
+
 async function save() {
   if (state.saving) return;
   sync();
@@ -158,21 +216,13 @@ async function save() {
     state.revision = Number(res?.revision ?? res?.new_revision ?? state.revision + 1);
     state.publishedSlugs = publishedSlugMap(snapshot);
     if (state.editVersion === editVersion) state.dirty = false;
-    renderMeta();
-    renderList();
-    message(state.dirty ? '保存中に新しい編集がありました。もう一度保存してください。' : 'オンラインに保存しました。');
-    if (!state.dirty) {
-try {
-await store.request('/functions/v1/trigger-deploy', {
-method: 'POST',
-auth: true,
-body: {}
-});
-message('保存しました。公開サイトの更新を開始しました。');
-} catch (deployError) {
-message('記事は保存済みです。自動公開の開始に失敗しました: ' + deployError.message, true);
-}
-}
+    if (state.dirty) {
+      message('保存中に新しい編集がありました。もう一度保存してください。');
+    } else {
+      await deployAfterSave();
+    }
+    // 描画の失敗が公開の合図を巻き込まないよう、描画は隔離して最後に行う。
+    try { renderMeta(); renderList(); } catch {}
 
 
 
@@ -277,6 +327,7 @@ function bind() {
   $('#loginForm').addEventListener('submit', login);
   $('#newBtn').addEventListener('click', addArticle);
   $('#saveBtn').addEventListener('click', save);
+  $('#deployBtn').addEventListener('click', manualDeploy);
   $('#reloadBtn').addEventListener('click', reload);
   $('#deleteBtn').addEventListener('click', remove);
   $('#logoutBtn').addEventListener('click', logout);

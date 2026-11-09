@@ -81,25 +81,27 @@ export class CloudStore {
 
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
-
+      let err;
       if (detail.message?.includes('ARCHIVE_CONFLICT')) {
-        throw Error('別の画面で更新されています。保存は行いませんでした。「オンラインの最新内容を読み直す」を押してください。');
-      }
-
-      if (
+        err = Error('別の画面で更新されています。保存は行いませんでした。「オンラインの最新内容を読み直す」を押してください。');
+      } else if (
         detail.message?.includes('ARCHIVE_FORBIDDEN') ||
         response.status === 401 ||
         response.status === 403
       ) {
-        throw Error('管理者の認証が必要です。ログインまたは管理者登録を確認してください。');
+        err = Error('管理者の認証が必要です。ログインまたは管理者登録を確認してください。');
+      } else {
+        err = Error(
+          detail.msg ||
+          detail.error_description ||
+          detail.message ||
+          `通信に失敗しました (${response.status})`
+        );
       }
-
-      throw Error(
-        detail.msg ||
-        detail.error_description ||
-        detail.message ||
-        `通信に失敗しました (${response.status})`
-      );
+      // 呼び出し側が応答の中身（クールダウン等）を判定できるよう、詳細を添付する。
+      err.detail = detail;
+      err.status = response.status;
+      throw err;
     }
 
     if (binary) return response.blob();
