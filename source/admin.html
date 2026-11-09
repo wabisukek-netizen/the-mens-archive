@@ -67,6 +67,14 @@
         <div class="field full"><label>タグ（カンマ区切り）<input id="tags" type="text" placeholder="mods, london, tailoring"></label></div>
         <div class="field full"><label>説明・meta description<textarea id="description" rows="3"></textarea></label></div>
         <div class="field full"><label>本文<textarea id="body" rows="18"></textarea></label></div>
+        <div class="field full"><label>本文への画像アップロード<input id="bodyImageFile" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+        <div class="field"><label>画像パス<input id="bodyImagePath" type="text" placeholder="アップロード後に自動入力"></label></div>
+        <div class="field"><label>代替テキスト（alt）<input id="bodyImageAlt" type="text"></label></div>
+        <div class="field"><label>キャプション<input id="bodyImageCaption" type="text"></label></div>
+        <div class="field"><label>クレジット<input id="bodyImageCredit" type="text"></label></div>
+        <div class="field"><label>出典URL<input id="bodyImageSource" type="text" placeholder="https://"></label></div>
+        <div class="field"><label>ライセンス<input id="bodyImageLicense" type="text" placeholder="自社撮影 / CC BY 4.0 など"></label></div>
+        <div class="field full"><button id="insertImageBtn" type="button">本文のカーソル位置に画像を挿入</button></div>
 
         <div class="field full"><label>画像パス<input id="image" type="text" placeholder="画像アップロード後に自動入力"></label></div>
         <div class="field"><label>画像alt<input id="imageAlt" type="text"></label></div>

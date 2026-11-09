@@ -301,6 +301,48 @@ async function uploadImage(file) {
   reader.readAsDataURL(file);
 }
 
+async function uploadBodyImage(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    message('画像アップロード中…');
+    try {
+      const path = await store.upload(reader.result);
+      $('#bodyImagePath').value = path;
+      message('画像をアップロードしました。出典とライセンスを入力して「本文のカーソル位置に画像を挿入」を押してください。');
+    } catch(e) { message(e.message,true); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function insertBodyImage() {
+  const path = $('#bodyImagePath').value.trim();
+  const alt = $('#bodyImageAlt').value.trim();
+  const source = $('#bodyImageSource').value.trim();
+  const license = $('#bodyImageLicense').value.trim();
+  if (!path) { message('先に画像をアップロードするか、画像パスを入力してください。', true); return; }
+  if (!alt) { message('代替テキスト（alt）を入力してください。', true); return; }
+  if (!source || !license) { message('出典URLとライセンスを入力してください（未記録の画像は公開できません）。', true); return; }
+  const escAttr = v => v.replace(/"/g, '&quot;');
+  let token = `[[img src="${escAttr(path)}" alt="${escAttr(alt)}"`;
+  const cap = $('#bodyImageCaption').value.trim();
+  if (cap) token += ` caption="${escAttr(cap)}"`;
+  const credit = $('#bodyImageCredit').value.trim();
+  if (credit) token += ` credit="${escAttr(credit)}"`;
+  token += ` source="${escAttr(source)}" license="${escAttr(license)}"]]`;
+  const ta = $('#body');
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  const before = ta.value.slice(0, start);
+  const after = ta.value.slice(end);
+  const insert = (before && !before.endsWith('\n') ? '\n' : '') + token + '\n';
+  ta.value = before + insert + after;
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = (before + insert).length;
+  sync(); setDirty(true);
+  message('本文に画像を挿入しました。保存ボタンを押してください。');
+}
+
 async function login(e) {
   e.preventDefault();
   message('ログイン中…');
@@ -335,6 +377,8 @@ function bind() {
   $('#exportBtn').addEventListener('click', exportBackup);
   $('#importFile').addEventListener('change', e=>importBackup(e.target.files?.[0]));
   $('#imageFile').addEventListener('change', e=>uploadImage(e.target.files?.[0]));
+  $('#bodyImageFile').addEventListener('change', e=>uploadBodyImage(e.target.files?.[0]));
+  $('#insertImageBtn').addEventListener('click', insertBodyImage);
   $('#editor').addEventListener('input', ()=>{sync();setDirty(true);});
   window.addEventListener('beforeunload', e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
 }

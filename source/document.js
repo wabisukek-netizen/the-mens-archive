@@ -33,6 +33,19 @@ export function normalizeDocument(input) {
   return data;
 }
 
+
+export function extractImageRefs(body='') {
+  const refs = [];
+  const re = /^\[\[img\s+(.+?)\]\]$/gm;
+  let m; while ((m = re.exec(String(body)))) {
+    const attrs = {};
+    const are = /(\w+)="([^"]*)"/g; let am;
+    while ((am = are.exec(m[1]))) attrs[am[1]] = am[2];
+    refs.push(attrs);
+  }
+  return refs;
+}
+
 export function validatePublished(data, originalSlugs = new Map()) {
   const slugs = new Set();
   const byId = new Map(data.articles.map(a => [String(a.id), a]));
@@ -49,6 +62,11 @@ export function validatePublished(data, originalSlugs = new Map()) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug || '')) throw Error(`${label}：slug は英小文字・数字・ハイフンで入力してください。`);
     if (slugs.has(a.slug)) throw Error(`slug「${a.slug}」が重複しています。`);
     slugs.add(a.slug);
+    for (const ref of extractImageRefs(a.body)) {
+      if (!ref.alt?.trim()) throw Error(`${label}：本文画像には代替テキスト（alt）が必要です。`);
+      if (!ref.source?.trim() || !ref.license?.trim()) throw Error(`${label}：本文画像には出典とライセンスの記録が必要です（未記録の画像は公開できません）。`);
+      if (/^https?:\/\//i.test(ref.src || '')) throw Error(`${label}：本文画像は外部URLではなく、アップロード済みの画像パスを指定してください。`);
+    }
     const old = originalSlugs.get(String(a.id));
     if (old && old !== a.slug) throw Error(`${label}：公開済みのslugを変更すると既存URLが消えます。元の「${old}」に戻してください。`);
   }

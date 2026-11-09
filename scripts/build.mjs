@@ -29,6 +29,20 @@ const articleTitle = a => a?.title || a?.name || '無題';
 const articleBody = a => a?.body || a?.content || '';
 const desc = a => (a?.description || a?.excerpt || articleBody(a).replace(/[#*_>`\n]/g,' ').replace(/\s+/g,' ').trim()).slice(0,180);
 
+function parseImgAttrs(spec='') {
+  const attrs = {};
+  const re = /(\w+)="([^"]*)"/g;
+  let m; while ((m = re.exec(spec))) attrs[m[1]] = m[2];
+  return attrs;
+}
+function renderImageToken(spec='') {
+  const a = parseImgAttrs(spec);
+  const src = abs(a.src || '');
+  if (!src) return '';
+  const cap = [a.caption, a.credit].filter(Boolean).join(' — ');
+  return `<figure class="article-figure body-figure"><img src="${attr(src)}" alt="${attr(a.alt||'')}" loading="lazy">${cap?`<figcaption>${esc(cap)}</figcaption>`:''}</figure>`;
+}
+
 function renderTextBody(text='') {
   const lines = String(text).replace(/\r/g,'').split('\n');
   const out = [];
@@ -39,6 +53,8 @@ function renderTextBody(text='') {
     if (/^###\s+/.test(line)) { flush(); out.push(`<h3>${esc(line.replace(/^###\s+/,''))}</h3>`); continue; }
     if (/^##\s+/.test(line)) { flush(); out.push(`<h2>${esc(line.replace(/^##\s+/,''))}</h2>`); continue; }
     if (/^>\s+/.test(line)) { flush(); out.push(`<blockquote>${esc(line.replace(/^>\s+/,''))}</blockquote>`); continue; }
+    const img = line.trim().match(/^\[\[img\s+(.+?)\]\]$/);
+    if (img) { flush(); out.push(renderImageToken(img[1])); continue; }
     para.push(line);
   }
   flush();
