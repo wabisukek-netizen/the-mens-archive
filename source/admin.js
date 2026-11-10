@@ -112,13 +112,34 @@ function renderList() {
     .sort((a,b)=>title(a).localeCompare(title(b),'ja'));
 
   $('#list').innerHTML = list.map(a=>`
-    <button class="admin-item ${String(a.id)===String(state.selectedId)?'active':''}" data-id="${esc(a.id||'')}">
-      <strong>${esc(title(a))}</strong>
-      <span>${published(a)?'公開':'下書き'}${a.topic?' · '+esc(a.topic):''}${a.slug?' · /'+esc(a.slug):''}</span>
-    </button>
+    <div class="admin-item ${String(a.id)===String(state.selectedId)?'active':''}">
+      <button class="admin-item-main" data-id="${esc(a.id||'')}">
+        <strong>${esc(title(a))}</strong>
+        <span>${published(a)?'公開':'下書き'}${a.topic?' · '+esc(a.topic):''}${a.slug?' · /'+esc(a.slug):''}</span>
+      </button>
+      ${published(a)?'':`<button class="admin-item-del" data-del-idx="${state.data.articles.indexOf(a)}" title="この下書きを削除します">削除</button>`}
+    </div>
   `).join('') || '<p class="muted">記事はまだありません。</p>';
 
   document.querySelectorAll('[data-id]').forEach(b=>b.addEventListener('click',()=>{sync();state.selectedId=b.dataset.id;fill(state.selectedId);renderList();}));
+  document.querySelectorAll('[data-del-idx]').forEach(b=>b.addEventListener('click',()=>removeDraft(Number(b.dataset.delIdx))));
+  refreshLinkTargets();
+}
+
+// 下書き専用の削除（一覧から直接）。公開済み記事にはボタン自体を出さない。
+// 実際の削除は「保存する」を押した時点で確定する（従来の編集画面の削除と同じ）。
+function removeDraft(idx) {
+  const a = state.data.articles[idx];
+  if (!a || published(a)) return;
+  if (!confirm(`下書き「${title(a)}」を削除しますか？\n「保存する」を押すと削除が確定します。`)) return;
+  const wasSelected = String(state.selectedId) === String(a.id);
+  state.data.articles.splice(idx, 1);
+  if (wasSelected) {
+    state.selectedId = state.data.articles[0]?.id || null;
+    state.selectedId ? fill(state.selectedId) : clearEditor();
+  }
+  renderList(); renderMeta(); setDirty(true);
+  message('下書きを削除しました。「保存する」を押すと確定します。');
 }
 
 function renderMeta() {
@@ -257,7 +278,10 @@ async function reload() {
 
 function remove() {
   const id = $('#articleId').value;
-  if (!id || !confirm('この記事を削除しますか？')) return;
+  const target = state.data.articles.find(x => String(x.id) === String(id));
+  if (!id) return;
+  if (target && published(target)) { message('公開済み記事は削除できません（公開URLを守るため）。', true); return; }
+  if (!confirm(`「${target ? title(target) : 'この記事'}」を削除しますか？`)) return;
   state.data.articles = state.data.articles.filter(a=>String(a.id)!==String(id));
   state.selectedId = state.data.articles[0]?.id || null;
   state.selectedId ? fill(state.selectedId) : clearEditor();
@@ -343,6 +367,55 @@ function insertBodyImage() {
   message('本文に画像を挿入しました。保存ボタンを押してください。');
 }
 
+function refreshLinkTargets() {
+  const sel = $('#linkTarget');
+  if (!sel) return;
+  const current = sel.value;
+  const items = (state.data?.articles || []).filter(a => (a.published || a.status === 'published') && a.slug);
+  sel.replaceChildren(...items.map(a => {
+    const o = document.createElement('option');
+    o.value = a.slug;
+    o.textContent = a.title || a.slug;
+    return o;
+  }));
+  if (!items.length) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = '公開済み記事がありません';
+    sel.replaceChildren(o);
+    return;
+  }
+  if (items.some(a => a.slug === current)) sel.value = current;
+}
+
+function insertAtCursor(text, ownLine) {
+  const ta = $('#body');
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  const before = ta.value.slice(0, start);
+  const after = ta.value.slice(end);
+  const insert = ownLine ? (before && !before.endsWith('\n') ? '\n' : '') + text + '\n' : text;
+  ta.value = before + insert + after;
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = (before + insert).length;
+  sync(); setDirty(true);
+}
+
+function insertLink() {
+  const slug = $('#linkTarget').value;
+  if (!slug) { message('リンク先の記事がありません。', true); return; }
+  const escAttr = v => v.replace(/"/g, '&quot;');
+  const text = $('#linkText').value.trim();
+  const token = text ? `[[link slug="${escAttr(slug)}" text="${escAttr(text)}"]]` : `[[link slug="${escAttr(slug)}"]]`;
+  insertAtCursor(token, false);
+  message('本文にリンクを挿入しました。保存ボタンを押してください。');
+}
+
+function insertTimeline() {
+  insertAtCursor('[[timeline]]\n年代 | 出来事を書きます\n[[/timeline]]', true);
+  message('本文に年表の枠を挿入しました。「年代 | 出来事」の形で書き換えてください。');
+}
+
 async function login(e) {
   e.preventDefault();
   message('ログイン中…');
@@ -379,6 +452,8 @@ function bind() {
   $('#imageFile').addEventListener('change', e=>uploadImage(e.target.files?.[0]));
   $('#bodyImageFile').addEventListener('change', e=>uploadBodyImage(e.target.files?.[0]));
   $('#insertImageBtn').addEventListener('click', insertBodyImage);
+  $('#insertLinkBtn').addEventListener('click', insertLink);
+  $('#insertTimelineBtn').addEventListener('click', insertTimeline);
   $('#editor').addEventListener('input', ()=>{sync();setDirty(true);});
   window.addEventListener('beforeunload', e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
 }

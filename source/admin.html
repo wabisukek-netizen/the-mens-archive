@@ -75,6 +75,11 @@
         <div class="field"><label>出典URL<input id="bodyImageSource" type="text" placeholder="https://"></label></div>
         <div class="field"><label>ライセンス<input id="bodyImageLicense" type="text" placeholder="自社撮影 / CC BY 4.0 など"></label></div>
         <div class="field full"><button id="insertImageBtn" type="button">本文のカーソル位置に画像を挿入</button></div>
+        <div class="field"><label>内部リンク（リンク先の記事）<select id="linkTarget"></select></label></div>
+        <div class="field"><label>リンクの文字<input id="linkText" type="text" placeholder="空欄なら記事のタイトル"></label></div>
+        <div class="field full"><button id="insertLinkBtn" type="button">本文のカーソル位置にリンクを挿入</button></div>
+        <div class="field full"><button id="insertTimelineBtn" type="button">本文のカーソル位置に年表の枠を挿入</button></div>
+        <div class="field full"><p>年表は、枠の中に「年代 | 出来事」を1行ずつ書きます。内部リンクは、段落の中の文字として入ります（リンク先は公開済み記事だけが選べます）。</p></div>
 
         <div class="field full"><label>画像パス<input id="image" type="text" placeholder="画像アップロード後に自動入力"></label></div>
         <div class="field"><label>画像alt<input id="imageAlt" type="text"></label></div>

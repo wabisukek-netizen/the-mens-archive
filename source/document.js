@@ -67,6 +67,17 @@ export function validatePublished(data, originalSlugs = new Map()) {
       if (!ref.source?.trim() || !ref.license?.trim()) throw Error(`${label}：本文画像には出典とライセンスの記録が必要です（未記録の画像は公開できません）。`);
       if (/^https?:\/\//i.test(ref.src || '')) throw Error(`${label}：本文画像は外部URLではなく、アップロード済みの画像パスを指定してください。`);
     }
+    for (const m of String(a.body).matchAll(/\[\[link\s+([^\]]+)\]\]/g)) {
+      const attrs = {};
+      const are = /(\w+)="([^"]*)"/g; let am;
+      while ((am = are.exec(m[1]))) attrs[am[1]] = am[2];
+      const target = attrs.slug || '';
+      const linkLabel = attrs.text?.trim() ? `本文リンク「${attrs.text.trim()}」` : '本文リンク（文字の指定なし）';
+      if (!target) throw Error(`${label}：${linkLabel}のリンク先が指定されていません。管理画面のリンク挿入から選び直してください。`);
+      const dest = data.articles.find(x => x.slug === target);
+      if (!dest) throw Error(`${label}：${linkLabel}のリンク先「${target}」という記事が存在しません。リンクを外すか、実在する記事を選び直してください。`);
+      if (!dest.published) throw Error(`${label}：${linkLabel}のリンク先「${dest.title?.trim() || target}」はまだ下書きです。先にリンク先を公開するか、リンクを外してください。`);
+    }
     const old = originalSlugs.get(String(a.id));
     if (old && old !== a.slug) throw Error(`${label}：公開済みのslugを変更すると既存URLが消えます。元の「${old}」に戻してください。`);
   }

@@ -43,12 +43,46 @@ function renderImageToken(spec='') {
   return `<figure class="article-figure body-figure"><img src="${attr(src)}" alt="${attr(a.alt||'')}" loading="lazy">${cap?`<figcaption>${esc(cap)}</figcaption>`:''}</figure>`;
 }
 
-function renderTextBody(text='') {
+function renderInline(line, linkTargets) {
+  const parts = String(line).split(/(\[\[link\s+[^\]]+\]\])/g);
+  return parts.map(part => {
+    const m = part.match(/^\[\[link\s+(.+)\]\]$/);
+    if (!m) return esc(part);
+    const a = parseImgAttrs(m[1]);
+    const slug = a.slug || '';
+    const title = linkTargets ? linkTargets.get(slug) : undefined;
+    if (!title) return esc(a.text || slug);
+    return `<a href="/articles/${slug}/">${esc(a.text || title)}</a>`;
+  }).join('');
+}
+
+function renderTimeline(rows) {
+  const items = rows.map(line => {
+    const idx = line.search(/[|｜]/);
+    if (idx < 0) return `<div class="timeline-row"><div class="timeline-event">${esc(line.trim())}</div></div>`;
+    const year = line.slice(0, idx).trim();
+    const event = line.slice(idx + 1).trim();
+    return `<div class="timeline-row"><div class="timeline-year">${esc(year)}</div><div class="timeline-event">${esc(event)}</div></div>`;
+  }).join('');
+  return `<div class="timeline">${items}</div>`;
+}
+
+function renderTextBody(text='', linkTargets=new Map()) {
   const lines = String(text).replace(/\r/g,'').split('\n');
   const out = [];
   let para = [];
-  const flush = () => { if (para.length) { out.push(`<p>${para.map(esc).join('<br>')}</p>`); para=[]; } };
-  for (const line of lines) {
+  const flush = () => { if (para.length) { out.push(`<p>${para.map(l => renderInline(l, linkTargets)).join('<br>')}</p>`); para=[]; } };
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '[[timeline]]') {
+      const rows = [];
+      let j = i + 1, closed = false;
+      for (; j < lines.length; j++) {
+        if (lines[j].trim() === '[[/timeline]]') { closed = true; break; }
+        if (lines[j].trim()) rows.push(lines[j]);
+      }
+      if (closed) { flush(); out.push(renderTimeline(rows)); i = j; continue; }
+    }
     if (!line.trim()) { flush(); continue; }
     if (/^###\s+/.test(line)) { flush(); out.push(`<h3>${esc(line.replace(/^###\s+/,''))}</h3>`); continue; }
     if (/^##\s+/.test(line)) { flush(); out.push(`<h2>${esc(line.replace(/^##\s+/,''))}</h2>`); continue; }
@@ -59,6 +93,35 @@ function renderTextBody(text='') {
   }
   flush();
   return out.join('\n');
+}
+
+function relatedArticles(a, published) {
+  const tags = new Set(a.tags || []);
+  const scored = [];
+  for (const b of published) {
+    if (!b.slug || b.slug === a.slug) continue;
+    let s = 0;
+    if (b.topic && b.topic === a.topic) s += 3;
+    s += 2 * (b.tags || []).filter(t => tags.has(t)).length;
+    if (b.era && b.era === a.era) s += 1;
+    if (b.region && b.region === a.region) s += 1;
+    // 最低関連度：同じTOPIC（3点）以上を必須とし、時代・地域だけの弱い一致は表示しない。
+    if (s >= 3) scored.push({ b, s });
+  }
+  scored.sort((x, y) => y.s - x.s);
+  return scored.slice(0, 4).map(x => x.b);
+}
+
+function cardLite(a) {
+  const url = `/articles/${a.slug}/`;
+  const image = abs(a.image || a.imagePath || '');
+  return `<article class="story"><a class="stretched" href="${url}"><div class="story-image ${image?'':'placeholder'}">${image?`<img src="${attr(image)}" alt="${attr(a.imageAlt||articleTitle(a))}" loading="lazy">`:'<span>THE MEN’S ARCHIVE</span>'}</div><div class="story-copy"><div class="eyebrow">${esc(a.topic||'')}${a.topic&&a.era?' / ':''}${esc(a.era||'')}</div><h3>${esc(articleTitle(a))}</h3>${a.subtitle?`<p class="story-sub">${esc(a.subtitle)}</p>`:''}<p>${esc(desc(a))}</p><div class="story-foot"><span>${esc(dateLabel(a.publishedAt||a.updatedAt))}</span><span>READ ↗</span></div></div></a></article>`;
+}
+
+function relatedSection(a, published) {
+  const rel = relatedArticles(a, published);
+  if (!rel.length) return '';
+  return `<section class="related-archives"><h2>RELATED ARCHIVES</h2><div class="story-grid related-grid">${rel.map(cardLite).join('')}</div></section>`;
 }
 
 async function readText(name) { return fs.readFile(path.join(source,name),'utf8'); }
@@ -146,6 +209,7 @@ async function main() {
   await write('index.html',home);
 
   const articleTemplate = await readText('article.template.html');
+  const linkTargets = new Map(published.map(x => [x.slug, articleTitle(x)]));
   for (const a of published) {
     const canonical = `${SITE_URL}/articles/${a.slug}/`;
     const image = abs(a.image||a.imagePath||'');
@@ -168,7 +232,7 @@ async function main() {
       {...blog}, {...crumbs,'@id':canonical+'#breadcrumb'}
     ]};
     const html=replaceAll(articleTemplate,{
-      TITLE:esc(titleFull),DESCRIPTION:attr(description),CANONICAL:attr(canonical),OG_TITLE:attr(articleTitle(a)),OG_IMAGE:image?`<meta property="og:image" content="${attr(image)}"><meta property="og:image:alt" content="${attr(a.imageAlt||articleTitle(a))}">`:'',PUBLISHED_AT:attr(publishedAt),UPDATED_AT:attr(updatedAt),TWITTER_CARD:image?'summary_large_image':'summary',TWITTER_IMAGE:image?`<meta name="twitter:image" content="${attr(image)}">`:'',JSONLD:jsonScript(graph),TITLE_SHORT:esc(articleTitle(a)),BREAD_TOPIC:a.topic?`<span>›</span><a href="/topics/${slugify(a.topic)}/">${esc(a.topic)}</a>`:'',ARTICLE_META:esc([a.topic,a.era,a.region].filter(Boolean).join(' / ')),SUBTITLE:a.subtitle?`<p class="article-subtitle">${esc(a.subtitle)}</p>`:'',HERO_IMAGE:image?`<figure class="article-figure"><img src="${attr(image)}" alt="${attr(a.imageAlt||articleTitle(a))}" fetchpriority="high">${a.imageAlt?`<figcaption>${esc(a.imageAlt)}</figcaption>`:''}</figure>`:'',ARTICLE_BODY:renderTextBody(articleBody(a)),REFERENCES:a.references?`<section class="article-references"><h2>参考文献・出典</h2><pre>${esc(a.references)}</pre></section>`:'',PUBLISHED_LABEL:esc(dateLabel(publishedAt)),UPDATED_LABEL:esc(dateLabel(updatedAt))
+      TITLE:esc(titleFull),DESCRIPTION:attr(description),CANONICAL:attr(canonical),OG_TITLE:attr(articleTitle(a)),OG_IMAGE:image?`<meta property="og:image" content="${attr(image)}"><meta property="og:image:alt" content="${attr(a.imageAlt||articleTitle(a))}">`:'',PUBLISHED_AT:attr(publishedAt),UPDATED_AT:attr(updatedAt),TWITTER_CARD:image?'summary_large_image':'summary',TWITTER_IMAGE:image?`<meta name="twitter:image" content="${attr(image)}">`:'',JSONLD:jsonScript(graph),TITLE_SHORT:esc(articleTitle(a)),BREAD_TOPIC:a.topic?`<span>›</span><a href="/topics/${slugify(a.topic)}/">${esc(a.topic)}</a>`:'',ARTICLE_META:esc([a.topic,a.era,a.region].filter(Boolean).join(' / ')),SUBTITLE:a.subtitle?`<p class="article-subtitle">${esc(a.subtitle)}</p>`:'',HERO_IMAGE:image?`<figure class="article-figure"><img src="${attr(image)}" alt="${attr(a.imageAlt||articleTitle(a))}" fetchpriority="high">${a.imageAlt?`<figcaption>${esc(a.imageAlt)}</figcaption>`:''}</figure>`:'',ARTICLE_BODY:renderTextBody(articleBody(a),linkTargets),REFERENCES:a.references?`<section class="article-references"><h2>参考文献・出典</h2><pre>${esc(a.references)}</pre></section>`:'',RELATED_ARCHIVES:relatedSection(a,published),PUBLISHED_LABEL:esc(dateLabel(publishedAt)),UPDATED_LABEL:esc(dateLabel(updatedAt))
     });
     await write(path.join('articles',a.slug,'index.html'),html);
   }
